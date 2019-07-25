@@ -319,6 +319,23 @@ def _call_mem_eq(i, **kwargs):
 
     return ret
 
+def _call_load_xdp_data(i, **kwargs):
+    ret = []
+    fn, skb, offset = i.src_vars
+    data = i.dst_vars[0]
+    if not isinstance(skb, _mem.ArgVar):
+        raise TranslationError(
+            i.starts_line,
+            'First argument to load_xdp_data must be XdpMetaDataContext argument')
+    if isinstance(offset, _mem.ConstVar):
+        assert issubclass(offset.var_type, _ctypes._SimpleCData)
+        offset = offset.val.value
+    skb_data_mem = bi.Mem(_get_var_reg(skb), offset, bi.Size.Word)
+    
+    ret.append(bi.Mov(skb_data_mem, bi.Reg.R2))
+    data = _convert_var(data)
+    ret.append(bi.Mov(bi.Reg.R2, data))
+    return ret
 
 def _call_pseudo_function(i, **kwargs):
     fn = i.src_vars[0].val
@@ -340,6 +357,8 @@ def _call_pseudo_function(i, **kwargs):
         return _call_load_skb_word(i, **kwargs)
     elif fn.name == 'mem_eq':
         return _call_mem_eq(i, **kwargs)
+    elif fn.name == 'load_xdp_data':
+        return _call_load_xdp_data(i, **kwargs)
     else:
         raise TranslationError(
             i.starts_line, 'Reference to invalid pseudo-function: {}'.format(

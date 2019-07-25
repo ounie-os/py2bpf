@@ -76,3 +76,5 @@ deref_u8 = PseudoFunc('deref', 1, ctypes.c_uint8)
 deref_u16 = PseudoFunc('deref', 1, ctypes.c_uint16)
 deref_u32 = PseudoFunc('deref', 1, ctypes.c_uint32)
 deref_u64 = PseudoFunc('deref', 1, ctypes.c_uint64)
+
+load_xdp_data = PseudoFunc('load_xdp_data', 1)
