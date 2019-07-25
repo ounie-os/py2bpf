@@ -31,6 +31,7 @@ class BpfMapType(enum.IntEnum):
     PERCPU_HASH = 5
     PERCPU_ARRAY = 6
     STACK_TRACE = 7
+    XSKMAP = 17
 
 
 class _BpfAttrMapCreate(ctypes.Structure):
