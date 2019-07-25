@@ -158,7 +158,13 @@ def _memcpy(i, dst_reg, src_reg, num_bytes):
 
     for i in range(num_bytes):
         sm = bi.Mem(src_reg, i, bi.Size.Byte)
-        dm = bi.Mem(dst_reg, i, bi.Size.Byte)
+        if isinstance(dst_reg, bi.Mem):
+            dst_reg.off -= i
+            dst_reg.size = bi.Size.Byte
+            dm = bi.Mem(dst_reg.reg, dst_reg.off, dst_reg.size)
+        else:
+            dm = bi.Mem(dst_reg, i, bi.Size.Byte)
+        
         ret.extend(_mov(sm, dm))
 
     return ret
@@ -230,7 +236,8 @@ def _call_packet_copy(i, **kwargs):
 
     out_of_bounds = _make_tmp_label()
 
-    ret = _mov(dst_ptr, bi.Reg.R1)
+#    ret = _mov(dst_ptr, bi.Reg.R1)
+    dst_ptr = _convert_var(dst_ptr)
 
     # %r2 = skb->data
     ret.append(bi.Mov(skb_data_mem, bi.Reg.R2))
@@ -258,7 +265,7 @@ def _call_packet_copy(i, **kwargs):
     # if skb->data + offset + num_bytes > skb->data_end: goto out_of_bounds
     ret.append(bi.JumpIfGreaterThan(bi.Reg.R4, bi.Reg.R2, out_of_bounds))
 
-    ret.extend(_memcpy(i, bi.Reg.R1, bi.Reg.R3, num_bytes.val))
+    ret.extend(_memcpy(i, dst_ptr, bi.Reg.R3, num_bytes.val))
 
     ret.append(bi.Label(out_of_bounds))
 
