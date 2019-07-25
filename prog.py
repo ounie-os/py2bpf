@@ -84,6 +84,7 @@ class ProgType(enum.IntEnum):
     SCHED_CLS = 3
     SCHED_ACT = 4
     TRACEPOINT = 5
+    XDP = 6
 
 
 class Prog:
