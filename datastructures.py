@@ -440,3 +440,17 @@ class BpfQueue(FileDescriptorDatastructure):
 
     def get_cpu_queue(self, cpu):
         return self.queues[cpu]
+
+def create_map_ex(map_type, key_type, value_type, max_entries, default=None):
+    class MapClass_ex(BpfMap):
+        KEY_TYPE = key_type
+        VALUE_TYPE = value_type
+        DEFAULT_VALUE = default if default is not None else value_type()
+        def __init__(self, map_type, max_entries):
+            self.fd = -1
+            key_size = ctypes.sizeof(self.KEY_TYPE)
+            value_size = ctypes.sizeof(self.VALUE_TYPE)
+            self.fd = _map_create(
+                map_type, key_size, value_size, max_entries)
+
+    return MapClass_ex(map_type, max_entries)
