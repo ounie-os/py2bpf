@@ -62,6 +62,8 @@ get_stackid = Func('get_stackid', 27, 3)
 
 probe_read_str = Func('probe_read_str', 45, 2, fill_array_size_args=[0])
 
+redirect_map = Func('redirect_map', 51, 3)
+
 addrof = PseudoFunc('addrof', 1)
 memcpy = PseudoFunc('memcpy', 3)
 packet_copy = PseudoFunc('packet_copy', 4)
