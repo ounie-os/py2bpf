@@ -149,6 +149,25 @@ def _lea(i, src, dst, stack, **kwargs):
             _mov(bi.Reg.R0, dst)
         )
 
+def _memcpy_packet(i, dst_reg, src_reg, num_bytes):
+    ret = []
+    # Unpack ctype
+    if isinstance(dst_reg, bi.Mem):
+        off = dst_reg.off
+        d_reg = dst_reg.reg
+    else:
+        raise TranslationError(i.starts_line, 'dst_reg must be bi.Mem')
+
+    if hasattr(num_bytes, 'value'):
+        num_bytes = num_bytes.value
+
+    for j in range(num_bytes):
+        dm = bi.Mem(d_reg, off, bi.Size.Byte)
+        sm = bi.Mem(src_reg, j, bi.Size.Byte)
+        ret.extend(_mov(sm, dm))
+        off += 1
+
+    return ret
 
 def _memcpy(i, dst_reg, src_reg, num_bytes):
     ret = []
@@ -158,13 +177,7 @@ def _memcpy(i, dst_reg, src_reg, num_bytes):
 
     for i in range(num_bytes):
         sm = bi.Mem(src_reg, i, bi.Size.Byte)
-        if isinstance(dst_reg, bi.Mem):
-            dst_reg.off -= i
-            dst_reg.size = bi.Size.Byte
-            dm = bi.Mem(dst_reg.reg, dst_reg.off, dst_reg.size)
-        else:
-            dm = bi.Mem(dst_reg, i, bi.Size.Byte)
-        
+        dm = bi.Mem(dst_reg, i, bi.Size.Byte)
         ret.extend(_mov(sm, dm))
 
     return ret
@@ -217,7 +230,7 @@ def _call_packet_copy(i, **kwargs):
     # take a look at kernel/bpf/verifier.c:find_good_pkt_pointers to see
     # the hoops that we're jumping through here.
     ret = []
-    fn, skb, offset, dst_ptr, num_bytes = i.src_vars
+    fn, skb, dst_ptr, offset, num_bytes = i.src_vars
 
     # TODO: also support ptr to context?
     if not isinstance(skb, _mem.ArgVar):
@@ -265,7 +278,7 @@ def _call_packet_copy(i, **kwargs):
     # if skb->data + offset + num_bytes > skb->data_end: goto out_of_bounds
     ret.append(bi.JumpIfGreaterThan(bi.Reg.R4, bi.Reg.R2, out_of_bounds))
 
-    ret.extend(_memcpy(i, dst_ptr, bi.Reg.R3, num_bytes.val))
+    ret.extend(_memcpy_packet(i, dst_ptr, bi.Reg.R3, num_bytes.val))
 
     ret.append(bi.Label(out_of_bounds))
 
